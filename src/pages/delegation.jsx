@@ -26,6 +26,7 @@ function SalesDataPage() {
   const [error, setError] = useState(null)
   const [debugInfo, setDebugInfo] = useState([])
   const [taskIDCounts, setTaskIDCounts] = useState({}) // State to track task ID counts
+  const [isAdmin, setIsAdmin] = useState(false) // Track if the current user is an admin
 
   // Format date as DD/MM/YYYY
   const formatDateToDDMMYYYY = (date) => {
@@ -155,6 +156,12 @@ function SalesDataPage() {
           )  
         )
     : historyData
+
+  // Check user role on component mount
+  useEffect(() => {
+    const userRole = sessionStorage.getItem('role');
+    setIsAdmin(userRole === 'admin');
+  }, []);
 
   const fetchSheetData = async () => {
     try {
@@ -777,10 +784,12 @@ function SalesDataPage() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-blue-50">
                     Status
                   </th>
-                  {/* Next Target Date Column */}
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-indigo-50">
-                    Next Target Date
-                  </th>
+                  {/* Next Target Date Column - Only visible for admin users */}
+                  {isAdmin && (
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-indigo-50">
+                      Next Target Date
+                    </th>
+                  )}
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-yellow-50">
                     Remarks
                   </th>
@@ -846,24 +855,31 @@ function SalesDataPage() {
                             className="border border-gray-300 rounded-md px-2 py-1 w-full disabled:bg-gray-100 disabled:cursor-not-allowed"
                           >
                             <option value="Done">Done</option>
-                            <option value="Extend">Extend</option>
+                            {isAdmin && (
+                              <>
+                                <option value="Extend">Extend</option>
+                                <option value="Shift">Shift</option>
+                              </>
+                            )}
                           </select>
                         </td>
-                        {/* Next Target Date */}
-                        <td className="px-6 py-4 whitespace-nowrap bg-indigo-50">
-                          <input
-                            type="date"
-                            disabled={!selectedItems.includes(sale._id) || statusData[sale._id] !== "Extend"}
-                            value={nextTargetDate[sale._id] || ""}
-                            onChange={(e) => handleNextTargetDateChange(sale._id, e.target.value)}
-                            className={`border border-gray-300 rounded-md px-2 py-1 w-full disabled:bg-gray-100 disabled:cursor-not-allowed ${
-                              selectedItems.includes(sale._id) && statusData[sale._id] === "Extend" && !nextTargetDate[sale._id] 
-                                ? "border-red-500" 
-                                : ""
-                            }`}
-                            required={statusData[sale._id] === "Extend"}
-                          />
-                        </td>
+                        {/* Next Target Date - Only visible for admin users */}
+                        {isAdmin && (
+                          <td className="px-6 py-4 whitespace-nowrap bg-indigo-50">
+                            <input
+                              type="date"
+                              disabled={!selectedItems.includes(sale._id) || statusData[sale._id] !== "Extend"}
+                              value={nextTargetDate[sale._id] || ""}
+                              onChange={(e) => handleNextTargetDateChange(sale._id, e.target.value)}
+                              className={`border border-gray-300 rounded-md px-2 py-1 w-full disabled:bg-gray-100 disabled:cursor-not-allowed ${
+                                selectedItems.includes(sale._id) && statusData[sale._id] === "Extend" && !nextTargetDate[sale._id] 
+                                  ? "border-red-500" 
+                                  : ""
+                              }`}
+                              required={statusData[sale._id] === "Extend"}
+                            />
+                          </td>
+                        )}
                         <td className="px-6 py-4 whitespace-nowrap bg-yellow-50">
                           <input
                             type="text"
