@@ -26,6 +26,8 @@ function SalesDataPage() {
   const [error, setError] = useState(null)
   const [debugInfo, setDebugInfo] = useState([])
   const [taskIDCounts, setTaskIDCounts] = useState({}) // State to track task ID counts
+  const [givenByFilter, setGivenByFilter] = useState("")
+const [nameFilter, setNameFilter] = useState("")
 
   // Format date as DD/MM/YYYY
   const formatDateToDDMMYYYY = (date) => {
@@ -93,6 +95,20 @@ function SalesDataPage() {
     return new Date(parts[2], parts[1] - 1, parts[0])
   }
 
+  // Get unique values for Given By filter (assuming it's in a specific column)
+const getUniqueGivenByValues = () => {
+  const values = salesData.map(item => item['col3'] || '') // Adjust column index as needed
+    .filter(value => value !== '')
+  return [...new Set(values)].sort()
+}
+
+// Get unique values for Name filter (assuming it's in a specific column)
+const getUniqueNameValues = () => {
+  const values = salesData.map(item => item['col4'] || '') // Adjust column index as needed
+    .filter(value => value !== '')
+  return [...new Set(values)].sort()
+}
+
   // Custom date sorting function - MODIFIED to use Column L instead of H
   const sortDateWise = (a, b) => {
     // Changed to use column L (index 11) instead of column H (index 7)
@@ -136,15 +152,26 @@ function SalesDataPage() {
   }
 
   // Update filteredSalesData calculation
-  const filteredSalesData = searchTerm
-    ? salesData
-        .filter(sale => 
-          Object.values(sale).some(value => 
-            value && value.toString().toLowerCase().includes(searchTerm.toLowerCase())
-          )
-        )
-        .sort(sortDateWise)
-    : salesData.sort(sortDateWise)
+  // Update filteredSalesData calculation
+const filteredSalesData = salesData
+.filter(sale => {
+  // Search term filter
+  const matchesSearch = !searchTerm || 
+    Object.values(sale).some(value => 
+      value && value.toString().toLowerCase().includes(searchTerm.toLowerCase())
+    )
+  
+  // Given By filter
+  const matchesGivenBy = !givenByFilter || 
+    (sale['col3'] && sale['col3'].toString() === givenByFilter) // Adjust column index as needed
+  
+  // Name filter
+  const matchesName = !nameFilter || 
+    (sale['col4'] && sale['col4'].toString() === nameFilter) // Adjust column index as needed
+  
+  return matchesSearch && matchesGivenBy && matchesName
+})
+.sort(sortDateWise)
 
   // Filter for history data
   const filteredHistoryData = searchTerm
@@ -542,51 +569,54 @@ function SalesDataPage() {
   return (
     <AdminLayout>
     <div className="space-y-6">
-      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-        <h1 className="text-2xl font-bold tracking-tight text-purple-500">
-          {showHistory ? "Sales History" : "Sales Data"}
-        </h1>
+    <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+  <h1 className="text-2xl font-bold tracking-tight text-purple-500">
+    {showHistory ? "Delegation History" : "Delegation Data"}
+  </h1>
 
-        <div className="flex space-x-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-            <input
-              type="text"
-              placeholder={showHistory ? "Search history..." : "Search transactions..."}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 pr-4 py-2 border border-purple-200 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-            />
-          </div>
-          
-          <button
-            onClick={toggleHistoryView}
-            className="rounded-md bg-gradient-to-r from-blue-500 to-indigo-600 py-2 px-4 text-white hover:from-blue-600 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-          >
-            {showHistory ? (
-              <div className="flex items-center">
-                <Upload className="h-4 w-4 mr-2" />
-                View Tasks
-              </div>
-            ) : (
-              <div className="flex items-center">
-                <Clock className="h-4 w-4 mr-2" />
-                View History
-              </div>
-            )}
-          </button>
-          
-          {!showHistory && (
-            <button
-              onClick={handleSubmit}
-              disabled={selectedItems.length === 0 || isSubmitting}
-              className="rounded-md bg-gradient-to-r from-purple-600 to-pink-600 py-2 px-4 text-white hover:from-purple-700 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isSubmitting ? "Processing..." : `Submit Selected (${selectedItems.length})`}
-            </button>
-          )}
+  <div className="flex flex-wrap gap-4">
+    {/* Given By Filter */}
+   
+
+    <div className="relative">
+      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+      <input
+        type="text"
+        placeholder={showHistory ? "Search history..." : "Search transactions..."}
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        className="pl-10 pr-4 py-2 border border-purple-200 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+      />
+    </div>
+    
+    <button
+      onClick={toggleHistoryView}
+      className="rounded-md bg-gradient-to-r from-blue-500 to-indigo-600 py-2 px-4 text-white hover:from-blue-600 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+    >
+      {showHistory ? (
+        <div className="flex items-center">
+          <Upload className="h-4 w-4 mr-2" />
+          View Tasks
         </div>
-      </div>
+      ) : (
+        <div className="flex items-center">
+          <Clock className="h-4 w-4 mr-2" />
+          View History
+        </div>
+      )}
+    </button>
+    
+    {!showHistory && (
+      <button
+        onClick={handleSubmit}
+        disabled={selectedItems.length === 0 || isSubmitting}
+        className="rounded-md bg-gradient-to-r from-purple-600 to-pink-600 py-2 px-4 text-white hover:from-purple-700 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {isSubmitting ? "Processing..." : `Submit Selected (${selectedItems.length})`}
+      </button>
+    )}
+  </div>
+</div>
       
       {successMessage && (
         <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-md flex items-center justify-between">
@@ -601,32 +631,66 @@ function SalesDataPage() {
       )}
       
       <div className="rounded-lg border border-purple-200 shadow-md bg-white overflow-hidden">
-        <div className="bg-gradient-to-r from-purple-50 to-pink-50 border-b border-purple-100 p-4">
-          <h2 className="text-purple-700 font-medium">
-            {showHistory ? "Completed Sales Records" : "Sales Records"}
-          </h2>
-          <p className="text-purple-600 text-sm">
-            {showHistory 
-              ? "Showing historical completed records" 
-              : "Showing today and tomorrow's records with pending submissions"}
-          </p>
-          {!showHistory && (
-            <div className="mt-2 flex gap-4 text-xs">
-              <div className="flex items-center">
-                <span className="inline-block w-3 h-3 rounded-full bg-green-500 mr-2"></span>
-                <span className="text-gray-700">Task extend once</span>
-              </div>
-              <div className="flex items-center">
-                <span className="inline-block w-3 h-3 rounded-full bg-yellow-500 mr-2"></span>
-                <span className="text-gray-700">Task extend twice</span>
-              </div>
-              <div className="flex items-center">
-                <span className="inline-block w-3 h-3 rounded-full bg-red-500 mr-2"></span>
-                <span className="text-gray-700">Task extend more than twice</span>
-              </div>
-            </div>
-          )}
+      <div className="bg-gradient-to-r from-purple-50 to-pink-50 border-b border-purple-100 p-4">
+  <div className="flex justify-between items-start">
+    {/* Left side content */}
+    <div className="flex-1">
+      <h2 className="text-purple-700 font-medium">
+        {showHistory ? "Completed Sales Records" : "Sales Records"}
+      </h2>
+      <p className="text-purple-600 text-sm">
+        {showHistory 
+          ? "Showing historical completed records" 
+          : "Showing today and tomorrow's records with pending submissions"}
+      </p>
+      {!showHistory && (
+        <div className="mt-2 flex gap-4 text-xs">
+          <div className="flex items-center">
+            <span className="inline-block w-3 h-3 rounded-full bg-green-500 mr-2"></span>
+            <span className="text-gray-700">Task extend once</span>
+          </div>
+          <div className="flex items-center">
+            <span className="inline-block w-3 h-3 rounded-full bg-yellow-500 mr-2"></span>
+            <span className="text-gray-700">Task extend twice</span>
+          </div>
+          <div className="flex items-center">
+            <span className="inline-block w-3 h-3 rounded-full bg-red-500 mr-2"></span>
+            <span className="text-gray-700">Task extend more than twice</span>
+          </div>
         </div>
+      )}
+    </div>
+    
+    {/* Right side dropdowns */}
+    {!showHistory && (
+      <div className="flex gap-3 ml-4">
+        {/* Given By Filter */}
+        <select
+          value={givenByFilter}
+          onChange={(e) => setGivenByFilter(e.target.value)}
+          className="px-3 py-2 border border-purple-200 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+        >
+          <option value="">All Given By</option>
+          {getUniqueGivenByValues().map(value => (
+            <option key={value} value={value}>{value}</option>
+          ))}
+        </select>
+
+        {/* Name Filter */}
+        <select
+          value={nameFilter}
+          onChange={(e) => setNameFilter(e.target.value)}
+          className="px-3 py-2 border border-purple-200 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+        >
+          <option value="">All Names</option>
+          {getUniqueNameValues().map(value => (
+            <option key={value} value={value}>{value}</option>
+          ))}
+        </select>
+      </div>
+    )}
+  </div>
+</div>
           
         {loading ? (
           <div className="text-center py-10">

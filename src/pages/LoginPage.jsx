@@ -21,7 +21,7 @@ const LoginPage = () => {
   const isInactiveRole = (role) => {
     if (!role) return false;
     
-    // Convert to lowercase
+    // Convert to lowercasex
     const normalizedRole = String(role).toLowerCase().trim();
     
     // Check for different variations of "inactive" status
